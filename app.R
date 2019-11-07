@@ -1,136 +1,58 @@
 library(shiny)
 
-`%then%` <- shiny:::`%OR%`
-`%>%` <- magrittr::`%>%`
-
-speciesMappings <- c("Human" = "hs", "Mouse" = "mm", "Rat" = "rn", "Zebrafish" = "dr", "Fruitfly" = "dm")
-geneIdTypes <- c("Ensembl Gene ID" = "ensemblgid", "NCBI Gene ID" = "ncbigid", "Gene Symbol" = "symbol")
-
-append_gene_symbols <- function(species, gene_id_type = geneIdTypes, gene_ids, gene_symbols = NULL) {
-  if (gene_id_type == "symbol" || is.null(gene_symbols)) {
-    gene_symbols <- gene_ids # ignore gene_symbols when gene_ids is already symbols
-  }
-  with_harmonizome_link <- ifelse(species == "hs", TRUE, FALSE) # harmonizome is only for human genes
-  gene_id_type <- match.arg(gene_id_type)
-  purrr::map2_chr(
-    gene_ids,
-    gene_symbols,
-    function(id, symbol) {
-      if (gene_id_type == "symbol") { # id is gene symbol already, only need to add harmonizome link when it's human genes
-        ifelse(with_harmonizome_link && !is.na(id), add_harmonizome_link(id), id)
-      } else { # ensembl or ncbi gid, add link
-        id_with_link <- ifelse(!is.na(id), do.call(glue::glue("add_{gene_id_type}_link"), list(species, id)), id)
-        ifelse(
-          is.na(symbol), # if there is no symbol, return id
-          id_with_link,
-          ifelse(
-            with_harmonizome_link, # if is human gene symbol, add harmonizome link
-            glue::glue("{id_with_link} ({add_harmonizome_link(symbol)})"),
-            glue::glue("{id_with_link} ({symbol})")
-          )
-        )
-      }
-    }
-  )
-}
-
-speciesReverseMapping <- names(speciesMappings) %>% rlang::set_names(speciesMappings)
-
-getSpeciesName <- function(speciesShortName = speciesMappings) {
-  speciesShortName <- match.arg(speciesShortName)
-  speciesReverseMapping[[speciesShortName]]
-}
-
-geneIdTypeReverseMappings <- names(geneIdTypes) %>% rlang::set_names(geneIdTypes)
-
-getGeneIdTypeName <- function(geneIdTypeShortName = geneIdTypes) {
-  geneIdTypeShortName <- match.arg(geneIdTypeShortName)
-  geneIdTypeReverseMappings[[geneIdTypeShortName]]
-}
-
-wrap_with_link <- function(base_url, params = NULL, text = "", color = NULL) {
-  href_url <- ifelse(
-    is.null(params),
-    base_url,
-    glue::glue(
-      base_url,
-      "?",
-      names(params) %>% purrr::reduce(function(accu, cur) {
-        cur_param <- glue::glue(cur, "=", params[[cur]])
-        ifelse(is.null(accu), cur_param, glue::glue(accu, "&", cur_param))
-      }, .init = NULL)
-    )
-  )
-  tags$a(
-    target = "_blank",
-    style = ifelse(is.null(color), "", glue::glue("color: {color};")),
-    href = href_url,
-    text
-  ) %>% as.character()
-}
-
-add_harmonizome_link <- function(gene) {
-  harmonizome_url <- glue::glue("http://amp.pharm.mssm.edu/Harmonizome/gene/", gene)
-  wrap_with_link(harmonizome_url, text = gene, color = "red")
-}
-
-add_ensemblgid_link <- function(species, ensembl_id) {
-  path_mappings <- list(
-    "hs" = "Homo_sapiens",
-    "mm" = "Mus_musculus",
-    "rn" = "Rattus_norvegicus",
-    "dr" = "Danio_rerio",
-    "dm" = "Drosophila_melanogaster"
-  )
-  ensembl_url <- glue::glue("https://useast.ensembl.org/{path_mappings[species]}/Gene/Summary")
-  wrap_with_link(ensembl_url, list("g" = ensembl_id), ensembl_id)
-}
+source("utils.R") # source in the utility functions
 
 ui <- fluidPage(
   titlePanel("Gene identifiers mapping within- or cross-species"),
   sidebarLayout(
     sidebarPanel(
-      width = 6,
+      width = 4,
       tags$h5("Step 1: import a data table file in which the first column is gene IDs to map"),
       shinywidgets::fileImportWidget(
         id = "inputGeneTable",
         shinywidgets::C_DATA_TYPE_TABLE,
         enableDataTypeSelection = FALSE
       ),
-      tags$h5("Step 2: define the input genes"),
-      selectInput(
-        "inputSpecies",
-        label = "Species",
-        choices = speciesMappings,
-        selected = "hs"
-      ),
-      selectInput(
-        "inputIdType",
-        label = "Gene ID type",
-        choices = geneIdTypes,
-        selected = "ensemblgid"
-      ),
-      tags$h5("Define the output genes"),
-      selectInput(
-        "outputSpecies",
-        label = "Output species",
-        choices = speciesMappings,
-        selected = "hs"
-      ),
-      selectInput(
-        "outputIdType",
-        label = "Output gene id type",
-        choices = geneIdTypes,
-        selected = "symbol"
-      ),
-      actionButton(
-        "mapGenes",
-        label = "Map Genes"
+      tags$br(),
+      textOutput("dataImportedHint"),
+      conditionalPanel(
+        condition = "output['isDataAvailable']",
+        tags$hr(),
+        tags$h5("Step 2: define the input genes"),
+        selectInput(
+          "inputSpecies",
+          label = "Species",
+          choices = speciesMappings,
+          selected = "hs"
+        ),
+        selectInput(
+          "inputIdType",
+          label = "Gene ID type",
+          choices = geneIdTypeMappings,
+          selected = "ensemblgid"
+        ),
+        tags$h5("Step 3: define the output genes"),
+        selectInput(
+          "outputSpecies",
+          label = "Species",
+          choices = speciesMappings,
+          selected = "hs"
+        ),
+        selectInput(
+          "outputIdType",
+          label = "Gene ID type",
+          choices = geneIdTypeMappings,
+          selected = "symbol"
+        ),
+        actionButton(
+          "mapGenes",
+          label = "Map Genes"
+        )
       ),
       textOutput("errorMsg")
     ),
     mainPanel(
-      width = 6,
+      width = 8,
       DT::dataTableOutput("mappedGeneTable"),
       checkboxInput(
         "onlyShowMappedGenes",
@@ -143,7 +65,9 @@ ui <- fluidPage(
         "onlyPreserveMapped",
         label = "Preserve only genes that have mappings in the result",
         value = TRUE
-      )
+      ),
+      downloadButton("downloadMappedTable", "Download mapped table"),
+      downloadButton("downloadIdReplacedTable", "Download mapped table with mapped IDs only")
     )
   )
 )
@@ -156,6 +80,17 @@ server <- function(input, output, session) {
     req(tableData)
     tableData$data
   })
+
+  output$dataImportedHint <- renderText({
+    req(importedGeneTable())
+    glue::glue("{importedGeneTable()$name} is imported")
+  })
+
+  output$isDataAvailable <- reactive({
+    req(inputGeneTable())
+    TRUE
+  })
+  outputOptions(output, "isDataAvailable", suspendWhenHidden = FALSE)
 
   output$errorMsg <- renderText({
     shinyjs::disable("mapGenes")
@@ -278,41 +213,40 @@ server <- function(input, output, session) {
   })
 
   mappedResult <- reactive({
-    res <- bind_cols(
+    res <- dplyr::bind_cols(
       mappedGeneIdTable(),
       isolate(inputGeneTable())
     )
     if (input$onlyPreserveMapped) {
-      res <- res %>% filter(!is.na(.[[1]]))
+      res <- res %>% dplyr::filter(!is.na(.[[1]]))
     }
     res
   })
 
   originalIdReplaced <- reactive({
-    res <- bind_cols(
-      mappedGeneIdTable() %>% select(1),
-      inputGeneTable() %>% select(-1)
+    res <- dplyr::bind_cols(
+      mappedGeneIdTable() %>% dplyr::select(1),
+      inputGeneTable() %>% dplyr::select(-1)
     )
     if (input$onlyPreserveMapped) {
-      res <- res %>% filter(!is.na(.[[1]]))
+      res <- res %>% dplyr::filter(!is.na(.[[1]]))
     }
     res
   })
 
-  dataObjectsCanBeExported <- reactive({
-    list(
-      newExportableDataObject(
-        mappedResult(),
-        type = C_DATA_TYPE_TABLE,
-        name = "mapped_result_with_original_ids"
-      ),
-      newExportableDataObject(
-        originalIdReplaced(),
-        type = C_DATA_TYPE_TABLE,
-        name = "mapped_result_original_ids_replaced"
-      )
-    )
-  })
+  output$downloadMappedTable <- downloadHandler(
+    filename = "mapped_result_with_original_ids.tsv",
+    content = function(file) {
+      readr::write_tsv(mappedResult(), file)
+    }
+  )
+
+  output$downloadIdReplacedTable <- downloadHandler(
+    filename = "mapped_result_original_ids_replaced.tsv",
+    content = function(file) {
+      readr::write_tsv(originalIdReplaced(), file)
+    }
+  )
 }
 
 shinyApp(ui, server)
