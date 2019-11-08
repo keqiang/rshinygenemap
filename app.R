@@ -7,7 +7,12 @@ ui <- fluidPage(
     sidebarPanel(
       width = 4,
       tags$h4("Import a data table"),
-      helpText("Choose a file in which the first column has gene IDs to map"),
+      helpText(
+        glue::glue(
+          "Choose a file in which the first column has gene IDs to map.",
+          " Will only match the first {C_MAX_NUMBER_OF_GENES} genes if the file has more than that."
+        )
+      ),
       shinywidgets::fileImportWidget(
         id = "inputGeneTable",
         shinywidgets::C_DATA_TYPE_TABLE,
@@ -60,9 +65,9 @@ ui <- fluidPage(
           "mapGenes",
           label = "Map Genes"
         ),
+        textOutput("errorMsg"),
         tags$hr()
       ),
-      textOutput("errorMsg"),
       wellPanel(
         tags$h4("Mapping result"),
         checkboxInput(
@@ -85,7 +90,7 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  importedGeneTable <- shinywidgets::importFile("inputGeneTable", shinywidgets::C_FILE_LOCATION_LOCAL)
+  importedGeneTable <- shinywidgets::importFile("inputGeneTable", shinywidgets::C_FILE_LOCATION_LOCAL, C_MAX_NUMBER_OF_GENES)
 
   inputGeneTable <- reactive({
     tableData <- importedGeneTable()

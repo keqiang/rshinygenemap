@@ -1,6 +1,8 @@
 `%then%` <- shiny:::`%OR%`
 `%>%` <- magrittr::`%>%`
 
+C_MAX_NUMBER_OF_GENES <- 200
+
 speciesMappings <- c("Human" = "hs", "Mouse" = "mm", "Rat" = "rn", "Zebrafish" = "dr", "Fruitfly" = "dm")
 geneIdTypeMappings <- c("Ensembl Gene ID" = "ensemblgid", "NCBI Gene ID" = "ncbigid", "Gene Symbol" = "symbol")
 
@@ -82,4 +84,9 @@ add_ensemblgid_link <- function(species, ensembl_id) {
   )
   ensembl_url <- glue::glue("https://useast.ensembl.org/{path_mappings[species]}/Gene/Summary")
   wrap_with_link(ensembl_url, list("g" = ensembl_id), ensembl_id)
+}
+
+add_ncbigid_link <- function(species, ncbi_id) {
+  ensembl_url <- "https://www.ncbi.nlm.nih.gov/gene"
+  wrap_with_link(ensembl_url, list("term" = ncbi_id), ncbi_id)
 }
