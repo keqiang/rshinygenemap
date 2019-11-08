@@ -64,22 +64,25 @@ ui <- fluidPage(
         textOutput("errorMsg"),
         tags$hr()
       ),
-      wellPanel(
-        tags$h4("Mapping result"),
-        checkboxInput(
-          "onlyShowMappedGenes",
-          label = "Only display genes that have been successfully mapped",
-          value = TRUE
-        ),
-        DT::dataTableOutput("mappedGeneTable"),
-        textOutput("mappingHint"),
-        checkboxInput(
-          "onlyPreserveMapped",
-          label = "Only keep genes that have been successfully mapped in the downloaded files",
-          value = TRUE
-        ),
-        downloadButton("downloadMappedTable", "Download mapped table"),
-        downloadButton("downloadIdReplacedTable", "Download mapped table with mapped IDs only")
+      conditionalPanel(
+        condition = "output['isResultAvailable']",
+        wellPanel(
+          tags$h4("Mapping result"),
+          checkboxInput(
+            "onlyShowMappedGenes",
+            label = "Only display genes that have been successfully mapped",
+            value = TRUE
+          ),
+          DT::dataTableOutput("mappedGeneTable"),
+          textOutput("mappingHint"),
+          checkboxInput(
+            "onlyPreserveMapped",
+            label = "Only keep genes that have been successfully mapped in the downloaded files",
+            value = TRUE
+          ),
+          downloadButton("downloadMappedTable", "Download mapped table"),
+          downloadButton("downloadIdReplacedTable", "Download mapped table with mapped IDs only")
+        )
       )
     )
   )
@@ -105,8 +108,6 @@ server <- function(input, output, session) {
   outputOptions(output, "isDataAvailable", suspendWhenHidden = FALSE)
 
   output$errorMsg <- renderText({
-    shinyjs::disable("mapGenes")
-
     fromSpecies <- input$inputSpecies
     fromType <- input$inputIdType
     toSpecies <- input$outputSpecies
@@ -116,22 +117,20 @@ server <- function(input, output, session) {
       need(importedGeneTable(), "Please select input data") %then%
         need(fromSpecies != toSpecies || fromType != toType, "No need to map genes of same species and ID types")
     )
-    shinyjs::enable("mapGenes")
   })
 
   geneMappingRes <- eventReactive(input$mapGenes, {
-    withProgress(
-      {
-        fromSpecies <- input$inputSpecies
-        fromType <- input$inputIdType
-        toSpecies <- input$outputSpecies
-        toType <- input$outputIdType
-        genesToMap <- inputGeneTable()[[1]]
-        res <- genemap::map_genes(fromSpecies, genesToMap, fromType, toSpecies, toType)
-        req(res)
-        res
-      },
-      message = "Mapping genes. Please wait..."
+    withProgress({
+      fromSpecies <- input$inputSpecies
+      fromType <- input$inputIdType
+      toSpecies <- input$outputSpecies
+      toType <- input$outputIdType
+      genesToMap <- inputGeneTable()[[1]]
+      res <- genemap::map_genes(fromSpecies, genesToMap, fromType, toSpecies, toType)
+      req(res)
+      res
+    },
+    message = "Mapping genes. Please wait..."
     )
   })
 
@@ -248,6 +247,12 @@ server <- function(input, output, session) {
     }
     res
   })
+
+  output$isResultAvailable <- reactive({
+    req(mappedResult(), originalIdReplaced())
+    TRUE
+  })
+  outputOptions(output, "isResultAvailable", suspendWhenHidden = FALSE)
 
   output$downloadMappedTable <- downloadHandler(
     filename = "mapped_result_with_original_ids.txt",
