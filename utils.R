@@ -1,10 +1,6 @@
 `%then%` <- shiny:::`%OR%`
 `%>%` <- magrittr::`%>%`
 
-getJavaScriptOutputId <- function(id, ns) {
-  str_interp("output['${ns(id)}']")
-}
-
 speciesMappings <- c("Human" = "hs", "Mouse" = "mm", "Rat" = "rn", "Zebrafish" = "dr", "Fruitfly" = "dm")
 geneIdTypeMappings <- c("Ensembl Gene ID" = "ensemblgid", "NCBI Gene ID" = "ncbigid", "Gene Symbol" = "symbol")
 

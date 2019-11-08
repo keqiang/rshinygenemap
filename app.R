@@ -1,5 +1,4 @@
 library(shiny)
-
 source("utils.R") # source in the utility functions
 
 ui <- fluidPage(
@@ -7,67 +6,80 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       width = 4,
-      tags$h5("Step 1: import a data table file in which the first column is gene IDs to map"),
+      tags$h4("Import a data table"),
+      helpText("Choose a file in which the first column has gene IDs to map"),
       shinywidgets::fileImportWidget(
         id = "inputGeneTable",
         shinywidgets::C_DATA_TYPE_TABLE,
         enableDataTypeSelection = FALSE
-      ),
-      tags$br(),
-      textOutput("dataImportedHint"),
+      )
+    ),
+    mainPanel(
+      width = 8,
       conditionalPanel(
         condition = "output['isDataAvailable']",
-        tags$hr(),
-        tags$h5("Step 2: define the input genes"),
-        selectInput(
-          "inputSpecies",
-          label = "Species",
-          choices = speciesMappings,
-          selected = "hs"
-        ),
-        selectInput(
-          "inputIdType",
-          label = "Gene ID type",
-          choices = geneIdTypeMappings,
-          selected = "ensemblgid"
-        ),
-        tags$h5("Step 3: define the output genes"),
-        selectInput(
-          "outputSpecies",
-          label = "Species",
-          choices = speciesMappings,
-          selected = "hs"
-        ),
-        selectInput(
-          "outputIdType",
-          label = "Gene ID type",
-          choices = geneIdTypeMappings,
-          selected = "symbol"
+        fluidRow(
+          column(
+            width = 6,
+            wellPanel(
+              tags$h4("Define the input genes"),
+              selectInput(
+                "inputSpecies",
+                label = "Species",
+                choices = speciesMappings,
+                selected = "hs"
+              ),
+              selectInput(
+                "inputIdType",
+                label = "Gene ID type",
+                choices = geneIdTypeMappings,
+                selected = "ensemblgid"
+              )
+            )
+          ),
+          column(
+            width = 6,
+            wellPanel(
+              tags$h4("Define the output genes"),
+              selectInput(
+                "outputSpecies",
+                label = "Species",
+                choices = speciesMappings,
+                selected = "hs"
+              ),
+              selectInput(
+                "outputIdType",
+                label = "Gene ID type",
+                choices = geneIdTypeMappings,
+                selected = "symbol"
+              )
+            )
+          )
         ),
         actionButton(
           "mapGenes",
           label = "Map Genes"
-        )
+        ),
+        tags$hr()
       ),
-      textOutput("errorMsg")
-    ),
-    mainPanel(
-      width = 8,
-      DT::dataTableOutput("mappedGeneTable"),
-      checkboxInput(
-        "onlyShowMappedGenes",
-        label = "Only show genes that have been successfully mapped",
-        value = TRUE
-      ),
-      textOutput("mappingHint"),
-      tags$hr(),
-      checkboxInput(
-        "onlyPreserveMapped",
-        label = "Preserve only genes that have mappings in the result",
-        value = TRUE
-      ),
-      downloadButton("downloadMappedTable", "Download mapped table"),
-      downloadButton("downloadIdReplacedTable", "Download mapped table with mapped IDs only")
+      textOutput("errorMsg"),
+      wellPanel(
+        tags$h4("Mapping result"),
+        checkboxInput(
+          "onlyShowMappedGenes",
+          label = "Only display genes that have been successfully mapped",
+          value = TRUE
+        ),
+        DT::dataTableOutput("mappedGeneTable"),
+        textOutput("mappingHint"),
+        checkboxInput(
+          "onlyPreserveMapped",
+          label = "Only keep genes that have been successfully mapped in the downloaded files",
+          value = TRUE
+        ),
+        downloadButton("downloadMappedTable", "Download mapped table"),
+        downloadButton("downloadIdReplacedTable", "Download mapped table with mapped IDs only")
+      )
     )
   )
 )
@@ -79,11 +91,6 @@ server <- function(input, output, session) {
     tableData <- importedGeneTable()
     req(tableData)
     tableData$data
-  })
-
-  output$dataImportedHint <- renderText({
-    req(importedGeneTable())
-    glue::glue("{importedGeneTable()$name} is imported")
   })
 
   output$isDataAvailable <- reactive({
@@ -108,16 +115,19 @@ server <- function(input, output, session) {
   })
 
   geneMappingRes <- eventReactive(input$mapGenes, {
-    withProgress({
-      fromSpecies <- input$inputSpecies
-      fromType <- input$inputIdType
-      toSpecies <- input$outputSpecies
-      toType <- input$outputIdType
-      genesToMap <- inputGeneTable()[[1]]
-      res <- genemap::map_genes(fromSpecies, genesToMap, fromType, toSpecies, toType)
-      req(res)
-      res
-    }, message = "Mapping genes. Please wait...")
+    withProgress(
+      {
+        fromSpecies <- input$inputSpecies
+        fromType <- input$inputIdType
+        toSpecies <- input$outputSpecies
+        toType <- input$outputIdType
+        genesToMap <- inputGeneTable()[[1]]
+        res <- genemap::map_genes(fromSpecies, genesToMap, fromType, toSpecies, toType)
+        req(res)
+        res
+      },
+      message = "Mapping genes. Please wait..."
+    )
   })
 
   availableGeneMappings <- reactive({
@@ -235,14 +245,14 @@ server <- function(input, output, session) {
   })
 
   output$downloadMappedTable <- downloadHandler(
-    filename = "mapped_result_with_original_ids.tsv",
+    filename = "mapped_result_with_original_ids.txt",
     content = function(file) {
       readr::write_tsv(mappedResult(), file)
     }
   )
 
   output$downloadIdReplacedTable <- downloadHandler(
-    filename = "mapped_result_original_ids_replaced.tsv",
+    filename = "mapped_result_original_ids_replaced.txt",
     content = function(file) {
       readr::write_tsv(originalIdReplaced(), file)
     }
