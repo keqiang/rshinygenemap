@@ -1,4 +1,3 @@
-`%then%` <- shiny:::`%OR%`
 `%>%` <- magrittr::`%>%`
 
 C_MAX_NUMBER_OF_GENES <- 200

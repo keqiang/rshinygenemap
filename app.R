@@ -2,7 +2,11 @@ library(shiny)
 source("utils.R") # source in the utility functions
 
 ui <- fluidPage(
-  titlePanel("Gene identifiers mapping within- or cross-species"),
+  theme = shinythemes::shinytheme("sandstone"),
+  titlePanel(
+    "Gene identifiers mapping within- or cross-species",
+    windowTitle = "GeneMap"
+  ),
   sidebarLayout(
     sidebarPanel(
       width = 4,
@@ -110,30 +114,32 @@ server <- function(input, output, session) {
   })
   outputOptions(output, "isDataAvailable", suspendWhenHidden = FALSE)
 
+  errorMsg <- reactiveVal(NULL)
   output$errorMsg <- renderText({
+    errorMsg()
+  })
+
+  observe({
+    errorMsg(NULL)
+    if (input$inputSpecies == input$outputSpecies && input$inputIdType == input$outputIdType) {
+      errorMsg("No need to map genes of same species and ID types")
+    }
+  })
+
+  geneMappingRes <- eventReactive(input$mapGenes, {
     fromSpecies <- input$inputSpecies
     fromType <- input$inputIdType
     toSpecies <- input$outputSpecies
     toType <- input$outputIdType
 
-    validate(
-      need(importedGeneTable(), "Please select input data") %then%
-        need(fromSpecies != toSpecies || fromType != toType, "No need to map genes of same species and ID types")
-    )
-  })
-
-  geneMappingRes <- eventReactive(input$mapGenes, {
-    withProgress({
-      fromSpecies <- input$inputSpecies
-      fromType <- input$inputIdType
-      toSpecies <- input$outputSpecies
-      toType <- input$outputIdType
-      genesToMap <- inputGeneTable()[[1]]
-      res <- genemap::map_genes(fromSpecies, genesToMap, fromType, toSpecies, toType)
-      req(res)
-      res
-    },
-    message = "Mapping genes. Please wait..."
+    req(is.null(errorMsg()))
+    withProgress(
+      message = "Mapping genes. Please wait...", {
+        genesToMap <- inputGeneTable()[[1]]
+        res <- genemap::map_genes(fromSpecies, genesToMap, fromType, toSpecies, toType)
+        req(res)
+        res
+      }
     )
   })
 
