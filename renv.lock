@@ -478,6 +478,13 @@
       "Repository": "CRAN",
       "Hash": "60167b7ec3de99e76ff406aaf0f83bb4"
     },
+    "renv": {
+      "Package": "renv",
+      "Version": "0.8.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "0b45cd1dfa978e60de94abd7084079a0"
+    },
     "reshape2": {
       "Package": "reshape2",
       "Version": "1.4.3",
@@ -528,6 +535,18 @@
       "Repository": "CRAN",
       "Hash": "510e1a05a8b9d9ca8e88cba157688c5b"
     },
+    "shinyfio": {
+      "Package": "shinyfio",
+      "Version": "0.1.0",
+      "Source": "GitHub",
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "keqiang",
+      "RemoteRepo": "shinyfio",
+      "RemoteRef": "master",
+      "RemoteSha": "46500b5c4f21f154b4ea054a3b0b4153f097be40",
+      "Hash": "a9f2a9895afe390568dea68765aab314"
+    },
     "shinyjs": {
       "Package": "shinyjs",
       "Version": "1.0",
@@ -541,18 +560,6 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "fd438135f3656d7bf5e854060c13ff56"
-    },
-    "shinywidgets": {
-      "Package": "shinywidgets",
-      "Version": "0.1.0",
-      "Source": "GitHub",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteRepo": "shinywidgets",
-      "RemoteUsername": "keqiang",
-      "RemoteRef": "master",
-      "RemoteSha": "45451cf3bccdaf01dcfca0673a8e0440ad6a13f0",
-      "Hash": "a86d6e01f80abba7041f7a150b4fac9d"
     },
     "sourcetools": {
       "Package": "sourcetools",

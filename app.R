@@ -17,7 +17,7 @@ ui <- fluidPage(
           " Will only match the first {C_MAX_NUMBER_OF_GENES} genes if the file has more than that."
         )
       ),
-      shinywidgets::dataTableImportWidget(
+      shinyfio::dataTableImportWidget(
         id = "inputGeneTable",
         label = "You can use the demo file on our server or import your own from your computer"
       )
@@ -96,7 +96,7 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  importedGeneTable <- shinywidgets::importDataTable(
+  importedGeneTable <- shinyfio::importDataTable(
     id = "inputGeneTable",
     maxNumberOfLines = C_MAX_NUMBER_OF_GENES,
     serverRootDirectories = c("sample_data" = file.path(".", "sample_data"))
