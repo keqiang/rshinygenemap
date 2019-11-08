@@ -13,7 +13,10 @@ ui <- fluidPage(
           " Will only match the first {C_MAX_NUMBER_OF_GENES} genes if the file has more than that."
         )
       ),
-      shinywidgets::dataTableImportWidget(id = "inputGeneTable")
+      shinywidgets::dataTableImportWidget(
+        id = "inputGeneTable",
+        label = "You can use the demo file on our server or import your own from your computer"
+      )
     ),
     mainPanel(
       width = 8,
@@ -28,7 +31,7 @@ ui <- fluidPage(
                 "inputSpecies",
                 label = "Species",
                 choices = speciesMappings,
-                selected = "hs"
+                selected = "rn"
               ),
               selectInput(
                 "inputIdType",
@@ -91,8 +94,8 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   importedGeneTable <- shinywidgets::importDataTable(
     id = "inputGeneTable",
-    fileLocation = shinywidgets::C_FILE_LOCATION_LOCAL,
-    maxNumberOfLines = C_MAX_NUMBER_OF_GENES
+    maxNumberOfLines = C_MAX_NUMBER_OF_GENES,
+    serverRootDirectories = c("sample_data" = file.path(".", "sample_data"))
   )
 
   inputGeneTable <- reactive({

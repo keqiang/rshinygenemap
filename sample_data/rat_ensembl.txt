@@ -1,4 +1,4 @@
-rn_genes	d1	d2	d3
+rat_gene_ensembl_id	dummy_column_1	dummy_column_2	dummy_column_3
 ENSRNOG00000046319	1	2	3
 ENSRNOG00000047964	1	2	3
 ENSRNOG00000050370	1	2	3
